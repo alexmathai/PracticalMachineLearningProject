@@ -1,0 +1,95 @@
+---
+title: 'Practical Machine Learning: Course Project'
+author: "Alex Mathai"
+date: "Friday, February 20, 2015"
+output: html_document
+---
+
+This is a report on the results of the course project. It assumes the training and testing files are in the same directory as the .rmd. *Note:* from here out the testing file (set of 20), will be known as the validation set.
+
+**Executive Summary**
+
+Using the weight lifting exercise data [1], I was able to create a prediction model that accurately predicted the classification of the validation set in all 20 cases.  I did this by splitting my training data into train and test sets and then using that test set to *cross validate* my prediction algorythm. My prediction model used the random forest algorith with a *99.5% accuracy*. It had an expected out of sample error rate of < 1%, which was validated by the fact that I was able to successfully predict all 20 of the validation problems.
+
+
+
+**Data Loading and Cleaning**
+
+
+*Step 1:Load in the data and appropriate libraries.*
+
+```{r,message=FALSE,warning=FALSE}
+
+# Load necessary libraries
+library(caret)
+library(randomForest)
+
+        # Load in training and test files, treat spaces and NAs as NAs
+        pmltraining <- read.csv("pml-training.csv", stringsAsFactors=T,na.strings=c("","NA"))
+        
+        pmltesting <- read.csv("pml-testing.csv", stringsAsFactors=T,na.strings=c("","NA"))
+```
+
+
+*Step 2: Clean the Data*
+
+Looking at the data, there were 19,622 rows with 160 columns.  Many columns were almost entirely empty or "NA"", save for when there was a summary row that started a new movement.  I got rid of all these columns, reducing the set to 60 variables.  The first seven rows were identifying variables such as name of participant and time stamps.  I got rid of these as well because they could over fit the sample and lead to unusually accurate predictions simply because of the identifying information and not from the sensor data.  
+
+
+```{r}
+        # remove NAs
+        trainingclean <- pmltraining[colSums(is.na(pmltraining)) < 500]
+        # remove identifying data to prevent prediction based on that info.
+        trainingclean <- trainingclean[,-c(1:7)]
+
+```
+
+
+**Analysis**
+
+*Step 4: Partition the training set*
+
+This process leaves me with 53 columns, which is much more manageable. I then partition the training data into a train and test set.
+
+```{r}
+
+        inTrain = createDataPartition(trainingclean$classe,p=.7,list=FALSE)
+        train = trainingclean[inTrain,]
+        test = trainingclean[-inTrain,]
+
+```
+
+
+*Step 5: Fit a prediction model*
+
+I can now use randomForest() to create a model.  
+
+```{r}
+
+        fit<- randomForest(classe~.,data=train)        
+
+```
+
+*Step 6: Cross-validation*
+
+I check the accuracy using a confusion matrix.
+
+
+```{r}
+
+        confusionMatrix(test$classe,predict(fit,test))
+
+```
+
+
+**Conclusion**
+
+Achieving **99.5% accuracy**, I then run the prediction against the validation set, making sure to clean the set in the same manner as the training set.
+
+```{r}
+        # remove NAs
+        valclean <- pmltesting[colSums(is.na(pmltesting)) < 500]
+        # remove identifying data to prevent prediction based on that info.
+        valclean <- valclean[,-c(1:7)]
+
+        valpredict <- predict(fit,valclean)
