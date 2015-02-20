@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Practical Machine Learning Project : Course project for Data Science Specialization:Practical Machine Learning">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Practical Machine Learning Project</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/alexmathai/PracticalMachineLearningProject">View on GitHub</a>
+
+          <h1 id="project_title">Practical Machine Learning Project</h1>
+          <h2 id="project_tagline">Course project for Data Science Specialization:Practical Machine Learning</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/alexmathai/PracticalMachineLearningProject/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/alexmathai/PracticalMachineLearningProject/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p></p>Practical Machine Learning: Course Project
+
+
+
+<p>
+
+</p>
+
+
+
+code{white-space: pre;}
+
+<p></p>
+
+
+
+
+  pre:not([class]) {
+    background-color: white;
+  }
+
+
+
+
+<p></p>
+
+<p></p>
+
+
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+
+<div>
+
+
+<div id="header">
+<h1>
+<a id="practical-machine-learning-course-project" class="anchor" href="#practical-machine-learning-course-project" aria-hidden="true"><span class="octicon octicon-link"></span></a>Practical Machine Learning: Course Project</h1>
+<h4>
+<a id="alex-mathai" class="anchor" href="#alex-mathai" aria-hidden="true"><span class="octicon octicon-link"></span></a><em>Alex Mathai</em>
+</h4>
+<h4>
+<a id="friday-february-20-2015" class="anchor" href="#friday-february-20-2015" aria-hidden="true"><span class="octicon octicon-link"></span></a><em>Friday, February 20, 2015</em>
+</h4>
+</div>
+
+<p>This is a report on the results of the course project. It assumes the training and testing files are in the same directory as the .rmd. <em>Note:</em> from here out the testing file (set of 20), will be known as the validation set.</p>
+
+<p><strong>Executive Summary</strong></p>
+
+<p>Using the weight lifting exercise data [1], I was able to create a prediction model that accurately predicted the classification of the validation set in all 20 cases. I did this by splitting my training data into train and test sets and then using that test set to <em>cross validate</em> my prediction algorythm. My prediction model used the random forest algorith with a <em>99.5% accuracy</em>. It had an expected out of sample error rate of &lt; 1%, which was validated by the fact that I was able to successfully predict all 20 of the validation problems.</p>
+
+<p><strong>Data Loading and Cleaning</strong></p>
+
+<p><em>Step 1:Load in the data and appropriate libraries.</em></p>
+
+<pre><code># Load necessary libraries
+library(caret)
+library(randomForest)
+
+        # Load in training and test files, treat spaces and NAs as NAs
+        pmltraining &lt;- read.csv("pml-training.csv", stringsAsFactors=T,na.strings=c("","NA"))
+        
+        pmltesting &lt;- read.csv("pml-testing.csv", stringsAsFactors=T,na.strings=c("","NA"))</code></pre>
+
+<p><em>Step 2: Clean the Data</em></p>
+
+<p>Looking at the data, there were 19,622 rows with 160 columns. Many columns were almost entirely empty or “NA”“, save for when there was a summary row that started a new movement. I got rid of all these columns, reducing the set to 60 variables. The first seven rows were identifying variables such as name of participant and time stamps. I got rid of these as well because they could over fit the sample and lead to unusually accurate predictions simply because of the identifying information and not from the sensor data.</p>
+
+<pre><code>        # remove NAs
+        trainingclean &lt;- pmltraining[colSums(is.na(pmltraining)) &lt; 500]
+        # remove identifying data to prevent prediction based on that info.
+        trainingclean &lt;- trainingclean[,-c(1:7)]</code></pre>
+
+<p><strong>Analysis</strong></p>
+
+<p><em>Step 4: Partition the training set</em></p>
+
+<p>This process leaves me with 53 columns, which is much more manageable. I then partition the training data into a train and test set.</p>
+
+<pre><code>        inTrain = createDataPartition(trainingclean$classe,p=.7,list=FALSE)
+        train = trainingclean[inTrain,]
+        test = trainingclean[-inTrain,]</code></pre>
+
+<p><em>Step 5: Fit a prediction model</em></p>
+
+<p>I can now use randomForest() to create a model.</p>
+
+<pre><code>        fit&lt;- randomForest(classe~.,data=train)        </code></pre>
+
+<p><em>Step 6: Cross-validation</em></p>
+
+<p>I check the accuracy using a confusion matrix.</p>
+
+<pre><code>        confusionMatrix(test$classe,predict(fit,test))</code></pre>
+
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1672    2    0    0    0
+##          B    1 1138    0    0    0
+##          C    0    5 1021    0    0
+##          D    0    0    8  955    1
+##          E    0    0    0    2 1080
+## 
+## Overall Statistics
+##                                          
+##                Accuracy : 0.9968         
+##                  95% CI : (0.995, 0.9981)
+##     No Information Rate : 0.2843         
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16      
+##                                          
+##                   Kappa : 0.9959         
+##  Mcnemar's Test P-Value : NA             
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            0.9994   0.9939   0.9922   0.9979   0.9991
+## Specificity            0.9995   0.9998   0.9990   0.9982   0.9996
+## Pos Pred Value         0.9988   0.9991   0.9951   0.9907   0.9982
+## Neg Pred Value         0.9998   0.9985   0.9984   0.9996   0.9998
+## Prevalence             0.2843   0.1946   0.1749   0.1626   0.1837
+## Detection Rate         0.2841   0.1934   0.1735   0.1623   0.1835
+## Detection Prevalence   0.2845   0.1935   0.1743   0.1638   0.1839
+## Balanced Accuracy      0.9995   0.9968   0.9956   0.9980   0.9993</code></pre>
+
+<p><strong>Conclusion</strong></p>
+
+<p>Achieving <strong>99.5% accuracy</strong>, I then run the prediction against the validation set, making sure to clean the set in the same manner as the training set.</p>
+
+<pre><code>        # remove NAs
+        valclean &lt;- pmltesting[colSums(is.na(pmltesting)) &lt; 500]
+        # remove identifying data to prevent prediction based on that info.
+        valclean &lt;- valclean[,-c(1:7)]
+
+        valpredict &lt;- predict(fit,valclean)</code></pre>
+
+<p></p>
+</div>
+
+
+
+
+
+
+
+<p>
+</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Practical Machine Learning Project maintained by <a href="https://github.com/alexmathai">alexmathai</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
